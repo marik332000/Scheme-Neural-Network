@@ -1,4 +1,7 @@
 ;;; Scheme Artificial Neural Network
+;; TODO
+;; - learning rate
+;; - load/save weights
 
 ;;; Supporting functions
 
@@ -34,7 +37,7 @@
       '()
       (let ((n (caar lst))
             (w (cadar lst)))
-        (n 'train err)
+        (n 'sum (* err w))
         (cons (list n (+ w (* (n) err)))
               (train (cdr lst) err)))))
 
@@ -51,7 +54,8 @@
   (let ((theta (rand-theta))
         (backward '())
         (cache #f)
-        (trained #f))
+        (trained #f)
+        (train-sum 0))
     ;; Neuron function with closure
     (lambda ([method 'activate] [arg '()])
       (cond
@@ -62,10 +66,16 @@
        ((eq? method 'reset)
         (set! cache #f)
         (set! trained #f)
+        (set! train-sum 0)
         (reset backward))
+       ((eq? method 'sum)
+        (set! train-sum (+ train-sum arg)))
        ((eq? method 'train)
         (if (not trained)
-            (set! backward (train backward arg))
+            (set! backward (train backward
+                                  (* cache
+                                     (- 1 cache)
+                                     train-sum)))
             (set! trained #t)))
        ((eq? method 'activate)
         (if cache
@@ -118,16 +128,31 @@
         (reset-layer (cdr layer)))))
 
 ;; Train a layer, which back-propagates
-(define (train-layer layer out desired a)
+(define (sum-layer layer out desired a)
   (if (empty? layer)
       '()
       (begin
-        ((car layer) 'train (* a (- (car desired) (car out))))
+        ((car layer) 'sum (* a (- (car desired) (car out))))
         (cons (car out)
-              (train-layer (cdr layer)
+              (sum-layer (cdr layer)
                            (cdr out)
                            (cdr desired)
                            a)))))
+
+;; Run 'train on each neuron in layer
+(define (train-layer layer)
+  (if (empty? layer)
+      '()
+      (begin
+        ((car layer) 'train))))
+
+;; Run training on all layers from front (pass in reversed)
+(define (train-layers rev-ann)
+  (if (empty? rev-ann)
+      '()
+      (begin
+        (train-layer (car rev-ann))
+        (train-layers (cdr rev-ann)))))
 
 ;;; ANN functions
 
@@ -148,6 +173,7 @@
 (define (train-ann ann in desired [a 1])
   (set-layer (car ann) in)
   (let ((out (run-layer (last ann))))
-    (train-layer (last ann) out desired a)
+    (sum-layer (last ann) out desired a)
+    (train-layers (reverse ann))
     (reset-layer (last ann))
     out))
