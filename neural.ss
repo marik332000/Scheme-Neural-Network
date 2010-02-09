@@ -177,3 +177,30 @@
     (train-layers (reverse ann))
     (reset-layer (last ann))
     out))
+
+;;; App functions
+
+(define (round-output out)
+  (map round out))
+
+
+;;; Test
+
+(define ann (new-ann '(2 3 1)))
+
+;; Xor
+(run-ann ann '(0 0))
+(run-ann ann '(0 1))
+(run-ann ann '(1 0))
+(run-ann ann '(1 1))
+(do ((i 0 (+ i 1)))
+    ((> i 100000) #t)
+  (train-ann ann '(0 0) '(0))
+  (train-ann ann '(0 1) '(1))
+  (train-ann ann '(1 0) '(1))
+  (train-ann ann '(1 1) '(0)))
+
+(round-output (run-ann ann '(0 0)))
+(round-output (run-ann ann '(0 1)))
+(round-output (run-ann ann '(1 0)))
+(round-output (run-ann ann '(1 1)))
