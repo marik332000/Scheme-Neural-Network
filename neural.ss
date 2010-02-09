@@ -1,5 +1,7 @@
 ;;; Scheme Artificial Neural Network
 
+;;; Supporting functions
+
 ;; Stack push macro
 (define-syntax push!
   (syntax-rules ()
@@ -24,12 +26,33 @@
 (define (rand-theta)
   (- (* (random) 4) 2))
 
+;;; Neuron functions
+
+;; Train neurons in weight list
+(define (train lst err)
+  (if (empty? lst)
+      '()
+      (let ((n (caar lst))
+            (w (cadar lst)))
+        (n 'train err)
+        (cons (list n (+ w (* (n) err)))
+              (train (cdr lst) err)))))
+
+;; Reset neurons in weight list
+(define (reset lst)
+  (if (empty? lst)
+      '()
+      (begin
+        ((caar lst) 'reset)
+        (reset (cdr lst)))))
+
 ;; Create a new neuron
 (define (new-neuron)
   (let ((theta (rand-theta))
         (backward '())
         (forward '())
-        (input #f))
+        (cache #f)
+        (trained #f))
     ;; Neuron function with closure
     (lambda ([method 'activate] [arg '()])
       (cond
@@ -38,11 +61,23 @@
        ((eq? method 'backward)
         (push! (list arg (rand-weight)) backward))
        ((eq? method 'set)
-        (set! input arg))
+        (set! cache arg))
+       ((eq? method 'reset)
+        (set! cache #f)
+        (set! trained #f)
+        (reset backward))
+       ((eq? method 'train)
+        (if (not trained)
+            (set! backward (train backward arg))
+            (set! trained #t)))
        ((eq? method 'activate)
-        (if input
-            input
-            (sigmoid (sum-weight backward))))))))
+        (if cache
+            cache
+            (begin
+              (set! cache (sigmoid (sum-weight backward)))
+              cache)))))))
+
+;;; Layer functions
 
 ;; Create a new neuron layer
 (define (new-layer n)
@@ -65,12 +100,6 @@
         (link-layers (car ann) (cadr ann))
         (link-ann (cdr ann)))))
 
-;; Create new ann based on specification
-(define (new-ann spec)
-  (let ((ann (map new-layer spec)))
-    (link-ann ann)
-    ann))
-
 ;; Hard set a layer of neurons
 (define (set-layer layer in)
   (if (empty? layer) '()
@@ -83,7 +112,45 @@
   (if (empty? layer) '()
       (cons ((car layer)) (run-layer (cdr layer)))))
 
+;; Reset layer, which back-propagates
+(define (reset-layer layer)
+  (if (empty? layer)
+      '()
+      (begin
+        ((car layer) 'reset)
+        (reset-layer (cdr layer)))))
+
+;; Train a layer, which back-propagates
+(define (train-layer layer out desired a)
+  (if (empty? layer)
+      '()
+      (begin
+        ((car layer) 'train (* a (- (car desired) (car out))))
+        (cons (car out)
+              (train-layer (cdr layer)
+                           (cdr out)
+                           (cdr desired)
+                           a)))))
+
+;;; ANN functions
+
+;; Create new ann based on specification
+(define (new-ann spec)
+  (let ((ann (map new-layer spec)))
+    (link-ann ann)
+    ann))
+
 ;; Get output of ann
 (define (run-ann ann in)
   (set-layer (car ann) in)
-  (run-layer (last ann)))
+  (let ((out (run-layer (last ann))))
+    (reset-layer (last ann))
+    out))
+
+;; Train the ann
+(define (train-ann ann in desired [a 1])
+  (set-layer (car ann) in)
+  (let ((out (run-layer (last ann))))
+    (train-layer (last ann) out desired a)
+    (reset-layer (last ann))
+    out))
