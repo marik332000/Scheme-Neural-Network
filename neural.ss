@@ -180,9 +180,22 @@
 
 ;;; App functions
 
+;; round to binary 1's and 0's
 (define (round-output out)
-  (map round out))
+  (map (compose inexact->exact round) out))
 
+;; Turn integer into list suitable for an ANN
+(define (int->blist int size)
+  (if (= 0 size)
+      '()
+      (cons (remainder int 2)
+            (int->blist (floor (/ int 2)) (- size 1)))))
+
+;; Turn ANN output into integer
+(define (blist->int lst)
+  (if (null? lst)
+      0
+      (+ (car lst) (* 2 (blist->int (cdr lst))))))
 
 ;;; Test
 
