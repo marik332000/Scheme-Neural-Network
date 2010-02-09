@@ -51,12 +51,12 @@
 
 ;; Link two layers together
 (define (link-layers left right)
-  (if (empty? left) '()
-      (if (empty? right) '()
-          (begin
-           ((car right) 'backward (car left))
-           (link-layers (cdr left) right)
-           (link-layers left (cdr right))))))
+  (if (or (empty? left) (empty? right))
+      '()
+      (begin
+        ((car right) 'backward (car left))
+        (link-layers (cdr left) right)
+        (link-layers left (cdr right)))))
 
 ;; Link up layers in an unlinked ann
 (define (link-ann ann)
