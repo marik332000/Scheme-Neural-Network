@@ -50,14 +50,11 @@
 (define (new-neuron)
   (let ((theta (rand-theta))
         (backward '())
-        (forward '())
         (cache #f)
         (trained #f))
     ;; Neuron function with closure
     (lambda ([method 'activate] [arg '()])
       (cond
-       ((eq? method 'forward)
-        (push! (list arg (rand-weight)) forward))
        ((eq? method 'backward)
         (push! (list arg (rand-weight)) backward))
        ((eq? method 'set)
