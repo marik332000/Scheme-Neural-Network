@@ -70,6 +70,8 @@
         (reset backward))
        ((eq? method 'sum)
         (set! train-sum (+ train-sum arg)))
+       ((eq? method 'list)
+        (map (lambda (el) (cadr el)) backward))
        ((eq? method 'train)
         (if (not trained)
             (set! backward (train backward
