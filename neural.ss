@@ -41,14 +41,6 @@
         (cons (list n (+ w (* (n) err)))
               (train (cdr lst) err)))))
 
-;; Reset neurons in weight list
-(define (reset lst)
-  (if (empty? lst)
-      '()
-      (begin
-        ((caar lst) 'reset)
-        (reset (cdr lst)))))
-
 ;; Create a new neuron
 (define (new-neuron)
   (let ((theta (rand-theta))
@@ -66,8 +58,7 @@
        ((eq? method 'reset)
         (set! cache #f)
         (set! trained #f)
-        (set! train-sum 0)
-        (reset backward))
+        (set! train-sum 0))
        ((eq? method 'sum)
         (set! train-sum (+ train-sum arg)))
        ((eq? method 'list)
@@ -121,7 +112,7 @@
   (if (empty? layer) '()
       (cons ((car layer)) (run-layer (cdr layer)))))
 
-;; Reset layer, which back-propagates
+;; Reset a single layer
 (define (reset-layer layer)
   (if (empty? layer)
       '()
@@ -164,11 +155,19 @@
     (link-ann ann)
     ann))
 
+;; Reset each neuron in ann
+(define (reset-ann ann)
+  (if (empty? ann)
+      '()
+      (begin
+        (reset-layer (car ann))
+        (reset-ann (cdr ann)))))
+
 ;; Get output of ann
 (define (run-ann ann in)
   (set-layer (car ann) in)
   (let ((out (run-layer (last ann))))
-    (reset-layer (last ann))
+    (reset-ann ann)
     out))
 
 ;; Train the ann
@@ -177,7 +176,7 @@
   (let ((out (run-layer (last ann))))
     (sum-layer (last ann) out desired a)
     (train-layers (reverse ann))
-    (reset-layer (last ann))
+    (reset-ann ann)
     out))
 
 ;;; App functions
