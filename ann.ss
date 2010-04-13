@@ -23,11 +23,11 @@
 
 ;; Generate a new random weight
 (define (rand-weight)
-  (- (random) 0.5))
+  (- (* (random) 1.2) 0.6))
 
 ;; Generate a new random threshold
 (define (rand-theta)
-  (- (* (random) 4) 2))
+  (- (* (random) 1.2) 0.6))
 
 ;;; Neuron functions
 
@@ -74,7 +74,8 @@
         (if cache
             cache
             (begin
-              (set! cache (sigmoid (sum-weight backward)))
+              (set! cache (sigmoid (- (sum-weight backward)
+                                      theta)))
               cache)))))))
 
 ;;; Layer functions
